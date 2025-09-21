@@ -4,6 +4,21 @@ yum install genisoimage
 yum install mock
 dnf install lorax -y
 yum install pykickstart   #### Validate your Kickstart file
+xorriso -as mkisofs -o Rocky-x86_64-dvd_ks.iso -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table \
+-eltorito-alt-boot -e images/efiboot.img -no-emul-boot   -isohybrid-gpt-basdat   isodir
+
+ xorrisofs -o output.iso -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -isohybrid-mbr /usr/lib/syslinux/isohdpfx.bin \
+  -partition_offset 16 ./CD_root
+
+xorrisofs -o output.iso \
+  -b isolinux/isolinux.bin \           # BIOS boot loader
+  -c isolinux/boot.cat \               # Boot catalog
+  -no-emul-boot -boot-load-size 4 -boot-info-table \
+  -isohybrid-mbr /usr/lib/syslinux/isohdpfx.bin \   # MBR for legacy BIOS
+  -eltorito-alt-boot  -partition_offset 16 \
+  -e boot/grub/efi.img -no-emul-boot \ # EFI System Partition (FAT with BOOTx64.EFI)
+  -isohybrid-gpt-basdat \              # Adds GPT alongside MBR
+  ./CD_root
 
 vim ks.cfg
 #version=RHEL8
