@@ -3,6 +3,7 @@ yum install xorriso
 yum install genisoimage
 yum install mock
 dnf install lorax -y
+yum install pykickstart   #### Validate your Kickstart file
 
 vim ks.cfg
 #version=RHEL8
