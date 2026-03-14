@@ -1,0 +1,4 @@
+mksquashfs /etc /home backup.sqfs
+mksquashfs / backup.sqfs -e /home/rockey -e /root -e /tmp -e /usr -e /var -e /srv -e 
+/boot -e /aft -e /lost+found -e /media -e /mnt -e /proc -e /dev -e /sys   ####-e is used to erase the dir. 
+mount backup.sqfs /mmt            ####check the file
