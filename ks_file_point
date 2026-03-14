@@ -1,0 +1,69 @@
+DIR="/sys/block"
+ROOTDRIVE=""
+
+for d in $DIR/nvme* $DIR/sd*; do
+    DEV=$(basename $d)
+    GB=$(( $(cat $DIR/$DEV/size) / 2097152 ))
+
+    if [ $GB -gt 100 ] && [ $GB -lt 1200 ]; then
+        ROOTDRIVE=$DEV
+        break
+    fi
+done
+
+cat <<EOF > /tmp/part-include
+clearpart --drives=$ROOTDRIVE --all --initlabel
+ignoredisk --only-use=$ROOTDRIVE
+part /boot --size=1024
+part swap --size=32768
+part / --size=1 --grow
+EOF
+
+
+#!/bin/bash
+
+DIR="/sys/block"
+MINSIZE=100
+MAXSIZE=1200
+ROOTDRIVE=""
+
+# Scan disks
+for d in $DIR/nvme* $DIR/sd*; do
+    DEV=$(basename "$d")
+
+    if [ -d "$DIR/$DEV" ]; then
+        SECTORS=$(cat $DIR/$DEV/size)
+        GB=$((SECTORS / 2097152))
+
+        echo "Disk device $DEV has size $GB GB"
+
+        if [[ $GB -gt $MINSIZE && $GB -lt $MAXSIZE && -z "$ROOTDRIVE" ]]; then
+            ROOTDRIVE=$DEV
+            echo "Select ROOTDRIVE=$ROOTDRIVE"
+        fi
+    fi
+done
+
+# Check disk found
+if [ -z "$ROOTDRIVE" ]; then
+    echo "ERROR: ROOTDRIVE is undefined"
+    exit 1
+else
+    echo "ROOTDRIVE=$ROOTDRIVE"
+cat <<EOF > /tmp/part-include
+
+zerombr
+clearpart --drives=$ROOTDRIVE --all --initlabel
+ignoredisk --only-use=$ROOTDRIVE
+part /boot --fstype=xfs --size=1024 --asprimary
+part swap --size=32768 --asprimary
+part / --fstype=xfs --size=1 --grow --asprimary
+
+EOF
+
+
+
+
+
+
+fi
