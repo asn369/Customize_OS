@@ -107,10 +107,7 @@ timezone Asia/Kolkata --isUtc
 rootpw --plaintext 123
 # Create users
 user --name=trading --uid=1000 --gecos="trading"
-user --name=ops     --gecos="ops"
-user --name=infra   --gecos="infra"
-user --name=pravil  --gecos="pravil"
-user --name=makwana --gecos="makwana"
+user --name=user     --gecos="user"
 
 # --- Disk detection and partitioning ---
 %pre
