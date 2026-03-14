@@ -1,10 +1,8 @@
 DIR="/sys/block"
 ROOTDRIVE=""
-
 for d in $DIR/nvme* $DIR/sd*; do
     DEV=$(basename $d)
     GB=$(( $(cat $DIR/$DEV/size) / 2097152 ))
-
     if [ $GB -gt 100 ] && [ $GB -lt 1200 ]; then
         ROOTDRIVE=$DEV
         break
