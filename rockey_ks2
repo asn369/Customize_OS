@@ -1,0 +1,352 @@
+
+[root@LAPTOP-HOS73QVC rocky]# cat ks.cfg
+#version=RHEL8
+graphical
+
+# Repositories
+repo --name="AppStream" --baseurl=file:///run/install/sources/mount-0000-cdrom/AppStream
+
+
+# Keyboard and language
+keyboard --vckeymap=in-eng --xlayouts='in (eng)'
+lang en_IN.UTF-8
+
+# Network and hostname
+network --hostname=localhost.localdomain
+
+# Disk
+ignoredisk --only-use=sda
+autopart
+clearpart --none --initlabel
+
+# Timezone
+timezone America/New_York --isUtc
+
+# Root password
+rootpw --plaintext 123456
+
+# Enable kdump
+%addon com_redhat_kdump --enable --reserve-mb='auto'
+%end
+
+# Security policies
+%anaconda
+pwpolicy root --minlen=6 --minquality=1 --notstrict --nochanges --notempty
+pwpolicy user --minlen=6 --minquality=1 --notstrict --nochanges --emptyok
+pwpolicy luks --minlen=6 --minquality=1 --notstrict --nochanges --notempty
+%end
+
+# Package selection
+%packages
+@^minimal-environment
+@container-management
+@development
+@dotnet-core
+@graphical-admin-tools
+@guest-agents
+@headless-management
+@legacy-unix
+@network-server
+@rpm-development-tools
+@scientific
+@security-tools
+@smart-card
+@standard
+@system-tools
+
+# Extra packages
+epel-release
+python38
+python38-devel
+python38-pip
+nc
+perf
+lldpd
+wget
+crash
+kexec-tools
+tar
+suitesparse
+lapack
+rsyslog
+traceroute
+vim
+net-tools
+libselinux-python3
+mlocate
+kernel-devel
+elfutils-libelf-devel
+libnl3-devel
+gsl-devel
+ncurses-devel
+tcpdump
+rsync
+bzip2-devel
+linuxptp
+psmisc
+lsof
+cyrus-sasl-plain
+sysstat
+chrony
+mcelog
+numactl
+socat
+mutt
+mailx
+cmake
+gdb
+ipmitool
+shc
+gperftools
+R
+boost
+%end
+
+# Post-install configuration
+%post --log=/root/ks-post.log --erroronfail
+
+### 1. Users
+useradd -u 1000 trading || echo "trading user exists"
+for user in ops pravil makwana infra; do
+    useradd $user || echo "User $user exists"
+done
+
+### 2. Directories
+mkdir -p /tickdata /static /scripts/util /data /cores /strategies /archive \
+         /home/trading/.ssh /home/trading/t2t/stratwise_t2t
+chown -R trading:trading /tickdata /static /scripts /scripts/util /data /cores /strategies /archive \
+                         /home/trading/.ssh /home/trading/t2t
+
+### 3. SSH CA keys
+cat << 'EOF' > /etc/ssh/mathisys_ca_dev.pub
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDNscGvt3vgZ681hTDowO0Itd5zqzwiEZVmdOXAu3CVLr2ihrnZzCPF7yRiAXLnvJB+JcSt58j8JsXYppkLYO+TURQSbYWDM1AuaGpwXfM57bnoiD6ZpkYaE6RZX25CcFQjON923MkNqSe6HuIgX13LdeJsrL3mg6XKjWBbfg09qSm1LFbuY54/7yBdLsMhz0musSz6rxPttbcUTbtAtyDg5kjItkGuCUegnkJvL7+uWOw+ITGgKJ15fQuPt2qNcifHMznU3E7ooVJDAfF+MJiqmDseKreZ0d1y0nO1wMJrmojY/tCRoRIo0A+OESxsTryFFR9+JfzTiaq9jcgPRVWm+tWY+admMYPeWSw90RXIhmLdB4usWTRLVrt8frG5+pyB0CQpn8/EgRfJgajEIeJwYQMLdSaaFZ7x2WSX7Dvpeqn3hcwBHof2x2Rj6h/wtPHYYyymCnJix4h3V+2sqKtL04DS9W2+5X9S5SDJqmX1pRlGVQp+ZoMaeAOWax1FRk9PduyyH++L0id3S/exH+phAHkXKqub/wYVjt5ZQIMX9/TEwu4qYVV3mSVI7AVRPY6xhbiNM8NVaBX5hnnykc6GUk4BAWNaAao6XApDnqxzPaQ7tPDU2+9exhy0etS9o9a26IRJ4kVIUdoqOsBwJ7ptBHPai8g/4iINZQr7HB2juw== CA key for user authentication
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCoKc27eh0PIuY3+ET54IUp2EveCcmwnD7yVVbQX7GKjrhKmM/j4GBxt/oTVnTTkM6s5zEYY+/ReGCYI2ocPs+xDgy6ZdYb592Nv56kRQjq6Eey50JOiOBU95CWkauluLHVyx59wRBlbx4ILWPHXe43L3FOvaPwSRNhl7vW6ar4nJTnw0vA/Zu8Wc+oIvgr0izMU1DByGRpM/OePLlKfTegp/nIXel7SyqjV3OjLJZWBI7mdJhgCoLUkYJv+JVXj7xp7b1MVy8rZQ9dVpi8pKNYXXcBmw+fWevTMLojBXV+FF6Cu8S/7hFYXwNe5t+G3+egH3SMGbFsPVb+SkDOKUzwytAMGopCKqn97jgWZf4v+rVCbapXxVzycnPAC9uXEaz+D3NlmwZgH+0zUc7Lt2egWW7ZZmJDhowt/Ad+38JshmoUK/JlwJfNX2P7Qc97zOMGXs540PPH8OQx+ynoqRGmP0ZkjH0CIBhNKezR6vPG6k9Ml8s4se57KbFTesfVN/d0Q9TWWfvqU4bS4+oP49n7MUD3v6O+asqjOkpRMukIgg8A9VHqaasp+I+VddvVGWwD1mqTCiFYnqMAhvHfztgFmVSRGIaUIBLZsr6/0wU9mgXjZk5WkpuBk0kmZ7qSVW0Wahi3bmBd5emfUJJcfEyHUzcvIK16/DiLvgJf5Nl8VQ== root@airflow-scheduler
+EOF
+
+grep -q "TrustedUserCAKeys /etc/ssh/mathisys_ca_dev.pub" /etc/ssh/sshd_config || \
+sed -i '/^AuthorizedKeysFile/a TrustedUserCAKeys /etc/ssh/mathisys_ca_dev.pub' /etc/ssh/sshd_config
+
+sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
+sed -i 's/^#StrictModes.*/StrictModes yes/' /etc/ssh/sshd_config
+
+### 4. Sudoers entries
+cat <<'EOF' >> /etc/sudoers
+ops ALL=NOPASSWD:/usr/bin/systemctl stop telegraf,/usr/bin/systemctl start telegraf,/usr/bin/systemctl restart telegraf,/usr/bin/systemctl status telegraf,/usr/bin/journalctl -f -u telegraf,/usr/bin/systemctl edit --full telegraf.service
+trading ALL=NOPASSWD:/usr/bin/perf
+trading ALL=NOPASSWD:/scripts/util/setprt *
+trading ALL=NOPASSWD:/usr/sbin/i7z
+trading ALL=NOPASSWD:/usr/bin/cpupower
+trading ALL=NOPASSWD:/usr/local/bin/rdtset *
+trading ALL=NOPASSWD:/usr/local/bin/pqos
+trading ALL=NOPASSWD:/usr/sbin/tcpdump *
+trading ALL=NOPASSWD:/usr/bin/gdb -p *
+trading ALL=NOPASSWD:/usr/sbin/reboot
+trading ALL=NOPASSWD:/bin/systemctl status ptp4l,/bin/systemctl status phc2sys
+trading ALL=NOPASSWD:/home/trading/clearCache, /usr/bin/tcptraceroute, /usr/sbin/dmidecode *
+trading ALL=NOPASSWD:/usr/bin/pkill tcpdump, /usr/bin/empty_trash, /usr/sbin/ip *
+EOF
+
+### 5. Udev rules
+echo 'KERNEL=="exa*", MODE="0666"' > /etc/udev/rules.d/50-exanic.rules
+
+### 6. Utility scripts
+cat <<'EOF' > /usr/bin/onboot
+#!/bin/bash
+/sbin/sysctl -p
+/root/clearCache
+/root/interrupts_affinity.sh
+echo 24 > /sys/devices/system/node/node0/hugepages/hugepages-1048576kB/nr_hugepages
+/usr/bin/exanic-config exanic0:0 promisc on
+/usr/bin/exanic-config exanic1:0 promisc on
+EOF
+chmod +x /usr/bin/onboot
+
+cat <<'EOF' > /root/clearCache
+#!/bin/bash
+/bin/sync; echo 3 > /proc/sys/vm/drop_caches; echo 1 > /proc/sys/vm/compact_memory
+EOF
+chmod +x /root/clearCache
+
+cat <<'EOF' > /root/interrupts_affinity.sh
+#!/bin/bash
+for irq in \$(ls /proc/irq/); do
+    echo 0 > /proc/irq/\$irq/smp_affinity_list
+done
+EOF
+chmod +x /root/interrupts_affinity.sh
+
+### 7. sysctl.conf
+cat <<'EOF' > /etc/sysctl.conf
+kernel.core_pattern=/cores/core.%e.%p.%h.%t
+net.ipv4.tcp_syncookies=1
+net.ipv4.ip_forward=1
+net.ipv4.tcp_keepalive_intvl=2
+net.ipv4.tcp_keepalive_time=20
+net.ipv4.tcp_keepalive_probes=5
+net.ipv4.tcp_low_latency=1
+kernel.panic=10
+kernel.panic_on_oops=1
+net.core.wmem_max=98108864
+net.core.rmem_max=534217728
+net.core.wmem_default=98108864
+net.core.rmem_default=98108864
+net.ipv4.tcp_mem=1541952 2055936 134217728
+net.ipv4.tcp_wmem=4096 16384 16777216
+net.ipv4.tcp_rmem=4096 87380 4194304
+net.ipv4.udp_mem=198108864 198108864 198108864
+net.ipv4.udp_rmem_min=1831072
+net.ipv4.udp_wmem_min=1831072
+net.core.netdev_max_backlog=5000000
+vm.hugetlb_shm_group=1000
+EOF
+
+### 8. Mutt config
+cat <<'EOF' > /home/trading/.muttrc
+set ssl_starttls=yes
+set smtp_url = "smtp://smtp.gmail.com:25/"
+EOF
+chown trading:trading /home/trading/.muttrc
+
+### 9. Crontab
+cat <<'EOF' | crontab -
+0 0 * * 1-5 echo "TODAY=\$(date +\%Y\%m\%d)" > /etc/default/telegraf
+1 0 * * 1-5 /bin/systemctl restart telegraf
+@reboot /usr/bin/onboot
+EOF
+
+### 10. Telegraf repo + install
+cat <<'EOF' > /etc/yum.repos.d/influxdata.repo
+[influxdata]
+name = InfluxData Repository - Stable
+baseurl = https://repos.influxdata.com/stable/\$basearch/main
+enabled = 1
+gpgcheck = 1
+gpgkey = https://repos.influxdata.com/influxdata-archive_compat.key
+EOF
+
+yum install -y telegraf
+
+usermod -aG telegraf ops
+chmod -R 775 /home/ops
+setfacl -m u:telegraf:rwx /home/ops
+chmod -R 755 /home/trading/t2t
+setfacl -m u:telegraf:rx /home/trading/t2t
+chmod -R 755 /home/trading/t2t/stratwise_t2t
+setfacl -m u:telegraf:rx /home/trading/t2t/stratwise_t2t
+setfacl -m g::rx /home/trading/t2t/stratwise_t2t
+setfacl -m u:telegraf:rx /strategies
+touch /etc/default/telegraf
+setfacl -m u:telegraf:rwx /etc/default/telegraf
+
+sed -i 's|/etc/telegraf|/home/ops/telegraf|g' /usr/lib/systemd/system/telegraf.service
+setfacl -m u:telegraf:rwx /home/ops/telegraf/logs
+
+### 11. Enable PowerTools
+yum config-manager --set-enabled powertools
+
+### 12. Python packages
+pip3.8 install --upgrade pip
+pip3.8 install cython numpy pandas influxdb paramiko pyyaml
+
+### 13. Remove unwanted packages
+for i in avahi firewalld libvirt-daemon irqbalance rng-tools; do
+    rpm -q "$i" && yum remove -y "$i" || echo "$i not installed"
+done
+
+%end
+
+# Run Setup Agent on first boot
+firstboot --enable
+
+[root@LAPTOP-HOS73QVC rocky]# ls
+anaconda_ks.cfg  isodir  ks.cfg  Rocky-x86_64-dvd.iso
+[root@LAPTOP-HOS73QVC rocky]# ls
+anaconda_ks.cfg  isodir  ks.cfg  Rocky-x86_64-dvd.iso
+[root@LAPTOP-HOS73QVC rocky]# cd isodir/
+[root@LAPTOP-HOS73QVC isodir]# ls
+AppStream  BaseOS  EFI  images  isolinux  ks.cfg  LICENSE  media.repo  TRANS.TBL
+[root@LAPTOP-HOS73QVC isodir]# vim ks.cfg
+[root@LAPTOP-HOS73QVC isodir]# cat ks.cfg
+#version=RHEL8
+graphical
+
+repo --name="AppStream" --baseurl=file:///run/install/sources/mount-0000-cdrom/AppStream
+
+cdrom
+firstboot --disable
+reboot
+
+keyboard --xlayouts='in (eng)'
+lang en_IN.UTF-8
+timezone America/New_York --isUtc
+
+network --bootproto=dhcp --device=link --activate
+rootpw 123456
+
+%packages
+@^minimal-environment
+kexec-tools
+%end
+
+
+# ---------- DISK AUTO DETECT ----------
+%pre
+
+DIR="/sys/block"
+MINSIZE=50
+ROOTDRIVE=""
+
+for d in $DIR/nvme* $DIR/sd*; do
+    DEV=$(basename "$d")
+
+    if [ -d "$DIR/$DEV" ]; then
+        GB=$(( $(cat $DIR/$DEV/size) / 2**21 ))
+
+        if [ $GB -gt $MINSIZE ] && [ -z "$ROOTDRIVE" ]; then
+            ROOTDRIVE=$DEV
+        fi
+    fi
+done
+
+
+cat <<EOF > /tmp/part-include
+
+zerombr
+clearpart --drives=$ROOTDRIVE --all --initlabel
+ignoredisk --only-use=$ROOTDRIVE
+reqpart --add-boot
+
+part /boot/efi --fstype=efi --size=600 --ondisk=$ROOTDRIVE
+part /boot --fstype=xfs --size=1024 --ondisk=$ROOTDRIVE
+part / --fstype=xfs --size=10240 --grow --ondisk=$ROOTDRIVE
+
+EOF
+
+%end
+
+
+%include /tmp/part-include
+
+
+# ---------- EXTRACT SQUASHFS ----------
+%post --nochroot
+
+mkdir /mnt/golden
+mount -o loop /run/install/repo/golden_root.sqfs /mnt/golden
+
+echo "Extracting golden image..."
+
+rsync -aHAX /mnt/golden/ /mnt/sysimage/
+
+umount /mnt/golden
+
+%end
+
+
+%addon com_redhat_kdump --enable --reserve-mb='auto'
+%end
+
+
+%anaconda  
+pwpolicy root --minlen=6 --minquality=1 --notstrict --nochanges --notempty
+%end
